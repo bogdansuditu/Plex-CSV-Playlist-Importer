@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Import Result{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <div class="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-6">
+        <h2 class="text-xl font-semibold text-emerald-200">Playlist processed successfully</h2>
+        <p class="mt-2 text-sm text-emerald-100">{{ playlist_name }} on {{ plex_url }}</p>
+        <dl class="mt-4 grid gap-4 md:grid-cols-3 text-sm">
+            <div class="rounded-lg border border-emerald-400/30 bg-slate-900/60 p-4">
+                <dt class="text-slate-300">Tracks matched</dt>
+                <dd class="mt-1 text-2xl font-semibold text-emerald-300">{{ result.matched_count }}</dd>
+            </div>
+            <div class="rounded-lg border border-emerald-400/30 bg-slate-900/60 p-4">
+                <dt class="text-slate-300">Tracks added to Plex</dt>
+                <dd class="mt-1 text-2xl font-semibold text-emerald-300">{{ result.added_count }}</dd>
+            </div>
+            <div class="rounded-lg border border-emerald-400/30 bg-slate-900/60 p-4">
+                <dt class="text-slate-300">Unmatched tracks</dt>
+                <dd class="mt-1 text-2xl font-semibold {% if result.unmatched %}text-red-300{% else %}text-emerald-300{% endif %}">{{ result.unmatched|length }}</dd>
+            </div>
+        </dl>
+    </div>
+
+    {% if result.unmatched %}
+    <div class="rounded-xl border border-red-500/30 bg-red-500/10">
+        <button type="button" class="flex w-full items-center justify-between px-6 py-4 text-left text-sm font-semibold text-red-100" data-accordion-button>
+            Unmatched tracks ({{ result.unmatched|length }})
+            <span class="text-xs uppercase tracking-wide">Toggle</span>
+        </button>
+        <div class="divide-y divide-red-500/20 border-t border-red-500/20 hidden" data-accordion-panel>
+            {% for item in result.unmatched %}
+            <div class="px-6 py-4 text-sm text-red-100">
+                <p class="font-medium">Row {{ item.row }}: {{ item.track_name }} — {{ item.artist_name }}</p>
+                {% if item.reason %}<p class="text-xs text-red-200/80">{{ item.reason }}</p>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <script>
+    document.querySelectorAll('[data-accordion-button]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const panel = button.nextElementSibling;
+            panel.classList.toggle('hidden');
+        });
+    });
+    </script>
+    {% endif %}
+
+    <div class="flex justify-end">
+        <a href="/" class="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:text-slate-100">
+            Import another playlist
+        </a>
+    </div>
+</div>
+{% endblock %}

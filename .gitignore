@@ -1,0 +1,6 @@
+.env
+.venv/
+venv/
+importer.log
+__pycache__/
+PRD.md

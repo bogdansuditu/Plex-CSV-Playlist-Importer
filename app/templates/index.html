@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+{% block title %}Import Playlist{% endblock %}
+{% block content %}
+<div class="bg-slate-900/60 border border-slate-800 rounded-xl shadow-xl">
+    <form id="import_form" method="post" action="/import" enctype="multipart/form-data" class="p-8 space-y-6">
+        <input type="hidden" id="job_id" name="job_id" value="">
+        {% if error %}
+        <div class="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+            {{ error }}
+        </div>
+        {% endif %}
+        <div class="grid gap-6 md:grid-cols-2">
+            <div class="space-y-2">
+                <label for="plex_url" class="block text-sm font-medium text-slate-200">Plex Server URL</label>
+                <input id="plex_url" name="plex_url" type="url" class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40" placeholder="http://plex:32400" value="{{ form_values.plex_url }}" required>
+            </div>
+            <div class="space-y-2">
+                <label for="plex_token" class="block text-sm font-medium text-slate-200">Plex Token</label>
+                <input id="plex_token" name="plex_token" type="text" class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40" value="{{ form_values.plex_token }}" placeholder="Your Plex auth token" required>
+            </div>
+            <div class="space-y-2">
+                <label for="music_section" class="block text-sm font-medium text-slate-200">Music Library Section</label>
+                <div class="flex gap-2">
+                    <select id="music_section" name="music_section" class="flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40" required>
+                        {% if form_values.music_section %}
+                        <option value="{{ form_values.music_section }}" selected>{{ form_values.music_section }}</option>
+                        {% else %}
+                        <option value="" selected disabled>Select a library</option>
+                        {% endif %}
+                    </select>
+                    <button type="button" id="refresh_libraries" class="inline-flex items-center rounded-lg border border-slate-700 px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-emerald-400 hover:text-emerald-200">
+                        Refresh
+                    </button>
+                </div>
+                <p id="library_status" class="text-xs text-slate-500">Choose the Plex music library to search.</p>
+            </div>
+            <div class="space-y-2">
+                <label for="playlist_name" class="block text-sm font-medium text-slate-200">Playlist Name</label>
+                <input id="playlist_name" name="playlist_name" type="text" class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40" value="{{ form_values.playlist_name }}" placeholder="My Imported Playlist">
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <input id="replace_existing" name="replace_existing" type="checkbox" class="h-4 w-4 rounded border-slate-700 bg-slate-900 text-emerald-500 focus:ring-emerald-500/60" {% if form_values.replace_existing %}checked{% endif %}>
+            <label for="replace_existing" class="text-sm text-slate-300">Replace existing playlist if it already exists</label>
+        </div>
+        <div class="space-y-6">
+            <div class="space-y-2">
+                <label for="csv_file" class="block text-sm font-medium text-slate-200">Upload CSV File</label>
+                <input id="csv_file" name="csv_file" type="file" accept=".csv,.txt" class="block w-full text-sm text-slate-300 file:mr-4 file:rounded-lg file:border-0 file:bg-emerald-500/20 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-emerald-200 hover:file:bg-emerald-500/30" />
+                <p class="text-xs text-slate-500">CSV should include Track name and Artist name columns.</p>
+                <p id="csv_file_status" class="text-xs"></p>
+            </div>
+            <div class="space-y-2">
+                <label for="csv_text" class="block text-sm font-medium text-slate-200">Parsed &amp; Editable Playlist</label>
+                <textarea id="csv_text" name="csv_text" rows="14" class="font-mono w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-3 text-sm text-slate-100 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40" placeholder="Artist name,Album,Track name\nThe Weeknd,After Hours,Blinding Lights">{{ form_values.csv_text }}</textarea>
+                <p class="text-xs text-slate-500">Review or edit the parsed data above before importing.</p>
+            </div>
+        </div>
+        <div class="flex justify-end">
+            <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-emerald-950 shadow-lg shadow-emerald-500/25 transition hover:bg-emerald-400">
+                Import Playlist
+            </button>
+        </div>
+    </form>
+</div>
+<div id="progress_overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur">
+    <div class="w-full max-w-md rounded-xl border border-emerald-500/40 bg-slate-900 px-6 py-8 text-center shadow-xl">
+        <h2 class="text-lg font-semibold text-emerald-200">Importing playlist…</h2>
+        <p id="progress_message" class="mt-2 text-sm text-slate-400">Preparing tracks…</p>
+        <div class="mt-6 h-3 w-full rounded-full bg-slate-800">
+            <div id="progress_bar" class="h-full rounded-full bg-emerald-500 transition-all duration-300" style="width: 0%"></div>
+        </div>
+        <p id="progress_counter" class="mt-2 text-xs text-slate-500">0 / 0</p>
+    </div>
+</div>
+<script>
+(function () {
+    const fileInput = document.getElementById('csv_file');
+    const textarea = document.getElementById('csv_text');
+    const status = document.getElementById('csv_file_status');
+    let controller;
+
+    if (!fileInput || !textarea) {
+        return;
+    }
+
+    async function requestPreview(file) {
+        if (controller) {
+            controller.abort();
+        }
+        controller = new AbortController();
+
+        const formData = new FormData();
+        formData.append('csv_file', file);
+        if (textarea.value.trim()) {
+            formData.append('csv_text', textarea.value.trim());
+        }
+
+        try {
+            const response = await fetch('/preview', {
+                method: 'POST',
+                body: formData,
+                signal: controller.signal,
+            });
+
+            const payload = await response.json();
+            if (!response.ok) {
+                throw new Error(payload.error || 'Preview failed');
+            }
+
+            textarea.value = payload.csv || '';
+            textarea.dispatchEvent(new Event('input'));
+            if (status) {
+                status.textContent = `Parsed ${payload.entryCount} tracks.`;
+                status.classList.remove('text-red-300');
+                status.classList.add('text-emerald-400');
+            }
+        } catch (error) {
+            if (status) {
+                status.textContent = error.message || 'Unable to preview CSV.';
+                status.classList.remove('text-emerald-400');
+                status.classList.add('text-red-300');
+            }
+        }
+    }
+
+    fileInput.addEventListener('change', () => {
+        if (status) {
+            status.textContent = '';
+            status.classList.remove('text-red-300');
+            status.classList.remove('text-emerald-400');
+        }
+
+        const file = fileInput.files && fileInput.files[0];
+        if (!file) {
+            return;
+        }
+
+        if (status) {
+            status.textContent = 'Parsing file...';
+            status.classList.add('text-emerald-400');
+        }
+
+        requestPreview(file);
+    });
+})();
+
+(function () {
+    const plexUrl = document.getElementById('plex_url');
+    const plexToken = document.getElementById('plex_token');
+    const select = document.getElementById('music_section');
+    const statusNode = document.getElementById('library_status');
+    const refreshBtn = document.getElementById('refresh_libraries');
+
+    if (!select || !refreshBtn) {
+        return;
+    }
+
+    function setStatus(message, isError = false) {
+        if (!statusNode) {
+            return;
+        }
+        statusNode.textContent = message;
+        statusNode.classList.remove('text-red-300', 'text-emerald-400');
+        if (isError) {
+            statusNode.classList.add('text-red-300');
+        } else if (message.toLowerCase().includes('loaded')) {
+            statusNode.classList.add('text-emerald-400');
+        }
+    }
+
+    function applyOptions(sections, previousValue) {
+        if (!Array.isArray(sections)) {
+            return;
+        }
+        select.innerHTML = '';
+        if (sections.length === 0) {
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = 'No libraries found';
+            placeholder.disabled = true;
+            placeholder.selected = true;
+            select.appendChild(placeholder);
+            return;
+        }
+        let foundPrevious = false;
+        sections.forEach((section) => {
+            const option = document.createElement('option');
+            option.value = section.title;
+            option.textContent = section.title;
+            if (section.title === previousValue) {
+                option.selected = true;
+                foundPrevious = true;
+            }
+            select.appendChild(option);
+        });
+        if (!foundPrevious && sections.length) {
+            select.value = sections[0].title;
+        }
+    }
+
+    async function loadLibraries() {
+        const url = plexUrl ? plexUrl.value.trim() : '';
+        const token = plexToken ? plexToken.value.trim() : '';
+
+        if (!token) {
+            setStatus('Enter your Plex token to load libraries.', true);
+            return;
+        }
+
+        setStatus('Loading libraries…');
+        refreshBtn.disabled = true;
+        select.disabled = true;
+
+        try {
+            const response = await fetch('/libraries', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ plex_url: url, plex_token: token }),
+            });
+
+            const payload = await response.json();
+            if (!response.ok) {
+                throw new Error(payload.error || 'Unable to fetch libraries.');
+            }
+
+            const previousValue = select.value;
+            applyOptions(payload.sections || [], previousValue);
+
+            if ((payload.sections || []).length === 0) {
+                setStatus('No music libraries found.', true);
+            } else {
+                setStatus(`Loaded ${(payload.sections || []).length} music library${payload.sections.length === 1 ? '' : ' libraries'}.`);
+            }
+        } catch (error) {
+            setStatus(error.message || 'Unable to fetch libraries.', true);
+        } finally {
+            refreshBtn.disabled = false;
+            select.disabled = false;
+        }
+    }
+
+    refreshBtn.addEventListener('click', loadLibraries);
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            loadLibraries();
+        });
+    } else {
+        loadLibraries();
+    }
+})();
+
+(function () {
+    const form = document.getElementById('import_form');
+    const jobField = document.getElementById('job_id');
+    const overlay = document.getElementById('progress_overlay');
+    const progressBar = document.getElementById('progress_bar');
+    const progressMsg = document.getElementById('progress_message');
+    const progressCounter = document.getElementById('progress_counter');
+    const textarea = document.getElementById('csv_text');
+    let pollTimer = null;
+
+    if (!form) {
+        return;
+    }
+
+    function showOverlay(total) {
+        if (overlay) {
+            overlay.classList.remove('hidden');
+        }
+        if (progressBar) {
+            progressBar.style.width = '0%';
+        }
+        if (progressCounter) {
+            progressCounter.textContent = `0 / ${total}`;
+        }
+        if (progressMsg) {
+            progressMsg.textContent = 'Import in progress…';
+        }
+    }
+
+    function hideOverlay() {
+        if (overlay) {
+            overlay.classList.add('hidden');
+        }
+    }
+
+    function stopPolling() {
+        if (pollTimer) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+        }
+    }
+
+    function updateProgressView(processed, total, status) {
+        if (!progressBar || !progressCounter) {
+            return;
+        }
+        const safeTotal = total || 0;
+        const ratio = safeTotal === 0 ? 0 : Math.min(1, processed / safeTotal);
+        progressBar.style.width = `${Math.round(ratio * 100)}%`;
+        progressCounter.textContent = `${processed} / ${safeTotal}`;
+        if (status === 'completed') {
+            progressMsg.textContent = 'Finalising playlist…';
+        } else if (status === 'error') {
+            progressMsg.textContent = 'An error occurred. Finishing up…';
+        }
+    }
+
+    async function pollProgress(jobId) {
+        pollTimer = setInterval(async () => {
+            try {
+                const response = await fetch(`/progress/${jobId}`);
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        if (progressMsg) {
+                            progressMsg.textContent = 'Preparing import…';
+                        }
+                        return; // try again on next tick
+                    }
+                    stopPolling();
+                    return;
+                }
+                const payload = await response.json();
+                updateProgressView(payload.processed || 0, payload.total || 0, payload.status || 'running');
+                if (payload.status === 'completed' || payload.status === 'error') {
+                    stopPolling();
+                }
+            } catch (error) {
+                stopPolling();
+            }
+        }, 750);
+    }
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const jobId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : `job-${Date.now()}`;
+        if (jobField) {
+            jobField.value = jobId;
+        }
+
+        let lineCount = 0;
+        if (textarea && textarea.value.trim()) {
+            const rows = textarea.value.trim().split(/\n+/);
+            lineCount = Math.max(0, rows.length - 1);
+        }
+        showOverlay(lineCount);
+        pollProgress(jobId);
+
+        const formData = new FormData(form);
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: formData,
+            });
+            const html = await response.text();
+            stopPolling();
+            hideOverlay();
+            document.open();
+            document.write(html);
+            document.close();
+        } catch (error) {
+            stopPolling();
+            hideOverlay();
+            alert('Import failed to start. Please try again.');
+        }
+    });
+})();
+</script>
+{% endblock %}
