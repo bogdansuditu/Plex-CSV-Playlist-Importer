@@ -19,6 +19,13 @@
                 <dd class="mt-1 text-2xl font-semibold {% if result.unmatched %}text-red-300{% else %}text-emerald-300{% endif %}">{{ result.unmatched|length }}</dd>
             </div>
         </dl>
+        {% if report_token %}
+        <div class="mt-6 flex justify-end">
+            <a href="/report/{{ report_token }}" class="inline-flex items-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/20 px-4 py-2 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-500/30">
+                Download CSV Report
+            </a>
+        </div>
+        {% endif %}
     </div>
 
     {% if result.unmatched %}

@@ -1,10 +1,13 @@
 import asyncio
+import csv
 import logging
+from io import StringIO
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
+from uuid import uuid4
 
 from fastapi import Body, FastAPI, File, Form, Request, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.templating import Jinja2Templates
 
 from app.config import settings
@@ -12,6 +15,7 @@ from app.services.csv_loader import CSVParseError, parse_playlist_csv
 from app.services.playlist_importer import PlaylistImportError, PlaylistImporter
 from app.services.progress import progress_tracker
 from plexapi.server import PlexServer
+from app.models import ImportResult, PlaylistEntry
 
 LOG_DIR = Path("logs")
 LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -38,6 +42,8 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Plex CSV Playlist Importer")
 templates = Jinja2Templates(directory="app/templates")
+
+REPORT_STORE: Dict[str, str] = {}
 
 
 def _form_bool(value: Optional[str]) -> bool:
@@ -212,6 +218,8 @@ async def import_playlist(
         "playlist_name": active_playlist_name,
         "plex_url": importer.plex_url,
     }
+    report_token = _store_report(result, playlist_payload.entries)
+    context["report_token"] = report_token
     response = templates.TemplateResponse("result.html", context)
     if job_id:
         progress_tracker.pop(job_id)
@@ -278,3 +286,41 @@ async def fetch_music_libraries(payload: Dict[str, str] = Body(default={})):  # 
     except Exception as exc:
         logger.exception("Failed to fetch Plex libraries: %s", exc)
         return JSONResponse({"error": "Unable to retrieve music libraries."}, status_code=502)
+
+
+@app.get("/report/{token}")
+async def download_report(token: str) -> Response:
+    csv_data = REPORT_STORE.pop(token, None)
+    if not csv_data:
+        return JSONResponse({"error": "Report expired or not found."}, status_code=404)
+    return Response(
+        content=csv_data,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename=import-report-{token}.csv"
+        },
+    )
+
+
+def _store_report(result: ImportResult, entries: List[PlaylistEntry]) -> str:
+    unmatched_map = {
+        item.row: item.reason or "No confident match found."
+        for item in result.unmatched
+    }
+
+    buffer = StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["Artist", "Album", "Track", "Status"])
+
+    for entry in entries:
+        status = unmatched_map.get(entry.row, "Imported ok")
+        writer.writerow([
+            entry.artist_name,
+            entry.album_name or "",
+            entry.track_name,
+            status,
+        ])
+
+    token = uuid4().hex
+    REPORT_STORE[token] = buffer.getvalue()
+    return token

@@ -8,6 +8,7 @@ A self-hosted FastAPI web app that turns CSV/TXT playlist exports into Plex play
 
 - **CSV ingestion** via upload or paste, with UTF-8 / Latin-1 auto-detection and pandas-backed parsing.
 - **Normalised preview + progress**: uploaded files are rendered into a canonical `Artist name,Album,Track name` table and imports display a live progress bar based on processed tracks.
+- **Post-import report**: download a CSV (`Artist, Album, Track, Status`) summarising imported and unmatched rows.
 - **Library auto-discovery**: the UI pulls music libraries straight from Plex so you can pick the correct section from a dropdown.
 - **Fuzzy matching**: RapidFuzz + Unidecode scoring against Plex search results, with album-based tie-breaking.
 - **Playlist management**: replace or append existing Plex playlists while avoiding duplicate `ratingKey`s.
