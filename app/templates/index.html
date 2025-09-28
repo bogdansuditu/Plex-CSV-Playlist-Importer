@@ -1,76 +1,185 @@
 {% extends "base.html" %}
 {% block title %}Import Playlist{% endblock %}
 {% block content %}
-<div class="bg-slate-900/60 border border-slate-800 rounded-xl shadow-xl">
-    <form id="import_form" method="post" action="/import" enctype="multipart/form-data" class="p-8 space-y-6">
-        <input type="hidden" id="job_id" name="job_id" value="">
-        {% if error %}
-        <div class="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-            {{ error }}
+<div class="plex-card rounded-2xl shadow-plex-lg">
+    <div class="p-8 lg:p-10">
+        <!-- Header Section -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-plex-text mb-2">Create New Playlist</h2>
+            <p class="text-plex-text-muted">Connect to your Plex server and import tracks from your CSV file</p>
         </div>
-        {% endif %}
-        <div class="grid gap-6 md:grid-cols-2">
-            <div class="space-y-2">
-                <label for="plex_url" class="block text-sm font-medium text-slate-200">Plex Server URL</label>
-                <input id="plex_url" name="plex_url" type="url" class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40" placeholder="http://plex:32400" value="{{ form_values.plex_url }}" required>
-            </div>
-            <div class="space-y-2">
-                <label for="plex_token" class="block text-sm font-medium text-slate-200">Plex Token</label>
-                <input id="plex_token" name="plex_token" type="text" class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40" value="{{ form_values.plex_token }}" placeholder="Your Plex auth token" required>
-            </div>
-            <div class="space-y-2">
-                <label for="music_section" class="block text-sm font-medium text-slate-200">Music Library Section</label>
-                <div class="flex gap-2">
-                    <select id="music_section" name="music_section" class="flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40" required>
-                        {% if form_values.music_section %}
-                        <option value="{{ form_values.music_section }}" selected>{{ form_values.music_section }}</option>
-                        {% else %}
-                        <option value="" selected disabled>Select a library</option>
-                        {% endif %}
-                    </select>
-                    <button type="button" id="refresh_libraries" class="inline-flex items-center rounded-lg border border-slate-700 px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-emerald-400 hover:text-emerald-200">
-                        Refresh
-                    </button>
+
+        <form id="import_form" method="post" action="/import" enctype="multipart/form-data" class="space-y-8">
+            <input type="hidden" id="job_id" name="job_id" value="">
+
+            {% if error %}
+            <div class="rounded-xl border border-plex-error/30 bg-plex-error/10 px-6 py-4">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-plex-error mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                    </svg>
+                    <p class="text-sm text-plex-error font-medium">{{ error }}</p>
                 </div>
-                <p id="library_status" class="text-xs text-slate-500">Choose the Plex music library to search.</p>
             </div>
-            <div class="space-y-2">
-                <label for="playlist_name" class="block text-sm font-medium text-slate-200">Playlist Name</label>
-                <input id="playlist_name" name="playlist_name" type="text" class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40" value="{{ form_values.playlist_name }}" placeholder="My Imported Playlist">
+            {% endif %}
+
+            <!-- Server Connection Section -->
+            <div class="space-y-6">
+                <h3 class="text-lg font-semibold text-plex-text border-b border-plex-border pb-2">Server Connection</h3>
+                <div class="grid gap-6 lg:grid-cols-2">
+                    <div class="space-y-3">
+                        <label for="plex_url" class="block text-sm font-semibold text-plex-text">Server URL</label>
+                        <input id="plex_url" name="plex_url" type="url"
+                               class="plex-input w-full rounded-xl px-4 py-3 text-plex-text placeholder-plex-text-faint focus:outline-none"
+                               placeholder="http://192.168.1.100:32400"
+                               value="{{ form_values.plex_url }}" required>
+                        <p class="text-xs text-plex-text-faint">Enter your Plex server URL</p>
+                    </div>
+                    <div class="space-y-3">
+                        <label for="plex_token" class="block text-sm font-semibold text-plex-text">Authentication Token</label>
+                        <input id="plex_token" name="plex_token" type="password"
+                               class="plex-input w-full rounded-xl px-4 py-3 text-plex-text placeholder-plex-text-faint focus:outline-none"
+                               value="{{ form_values.plex_token }}"
+                               placeholder="X-Plex-Token" required>
+                        <p class="text-xs text-plex-text-faint">Your Plex authentication token</p>
+                    </div>
+                </div>
             </div>
-        </div>
-        <div class="flex items-center gap-3">
-            <input id="replace_existing" name="replace_existing" type="checkbox" class="h-4 w-4 rounded border-slate-700 bg-slate-900 text-emerald-500 focus:ring-emerald-500/60" {% if form_values.replace_existing %}checked{% endif %}>
-            <label for="replace_existing" class="text-sm text-slate-300">Replace existing playlist if it already exists</label>
-        </div>
-        <div class="space-y-6">
-            <div class="space-y-2">
-                <label for="csv_file" class="block text-sm font-medium text-slate-200">Upload CSV File</label>
-                <input id="csv_file" name="csv_file" type="file" accept=".csv,.txt" class="block w-full text-sm text-slate-300 file:mr-4 file:rounded-lg file:border-0 file:bg-emerald-500/20 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-emerald-200 hover:file:bg-emerald-500/30" />
-                <p class="text-xs text-slate-500">CSV should include Track name and Artist name columns.</p>
-                <p id="csv_file_status" class="text-xs"></p>
+
+            <!-- Library & Playlist Section -->
+            <div class="space-y-6">
+                <h3 class="text-lg font-semibold text-plex-text border-b border-plex-border pb-2">Library & Playlist</h3>
+                <div class="grid gap-6 lg:grid-cols-2">
+                    <div class="space-y-3">
+                        <label for="music_section" class="block text-sm font-semibold text-plex-text">Music Library</label>
+                        <div class="flex gap-3">
+                            <select id="music_section" name="music_section"
+                                    class="plex-input flex-1 rounded-xl px-4 py-3 text-plex-text focus:outline-none" required>
+                                {% if form_values.music_section %}
+                                <option value="{{ form_values.music_section }}" selected>{{ form_values.music_section }}</option>
+                                {% else %}
+                                <option value="" selected disabled>Select a library</option>
+                                {% endif %}
+                            </select>
+                            <button type="button" id="refresh_libraries"
+                                    class="px-4 py-3 rounded-xl border border-plex-border text-plex-text-muted hover:text-plex-accent hover:border-plex-accent transition-all duration-200 font-medium">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <p id="library_status" class="text-xs text-plex-text-faint">Auto-discovering music libraries...</p>
+                    </div>
+                    <div class="space-y-3">
+                        <label for="playlist_name" class="block text-sm font-semibold text-plex-text">Playlist Name</label>
+                        <input id="playlist_name" name="playlist_name" type="text"
+                               class="plex-input w-full rounded-xl px-4 py-3 text-plex-text placeholder-plex-text-faint focus:outline-none"
+                               value="{{ form_values.playlist_name }}"
+                               placeholder="My Imported Playlist">
+                        <p class="text-xs text-plex-text-faint">Name for your new playlist</p>
+                    </div>
+                </div>
             </div>
-            <div class="space-y-2">
-                <label for="csv_text" class="block text-sm font-medium text-slate-200">Parsed &amp; Editable Playlist</label>
-                <textarea id="csv_text" name="csv_text" rows="14" class="font-mono w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-3 text-sm text-slate-100 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40" placeholder="Artist name,Album,Track name\nThe Weeknd,After Hours,Blinding Lights">{{ form_values.csv_text }}</textarea>
-                <p class="text-xs text-slate-500">Review or edit the parsed data above before importing.</p>
+            <!-- Playlist Options -->
+            <div class="space-y-4">
+                <div class="flex items-center gap-4 p-4 rounded-xl bg-plex-surface/30 border border-plex-border/50">
+                    <div class="flex items-center">
+                        <input id="replace_existing" name="replace_existing" type="checkbox"
+                               class="w-5 h-5 rounded-lg bg-plex-surface border-2 border-plex-border text-plex-accent focus:ring-2 focus:ring-plex-accent/30 focus:ring-offset-0"
+                               {% if form_values.replace_existing %}checked{% endif %}>
+                    </div>
+                    <div class="flex-1">
+                        <label for="replace_existing" class="text-sm font-medium text-plex-text cursor-pointer">Replace existing playlist</label>
+                        <p class="text-xs text-plex-text-faint">If a playlist with the same name exists, replace it completely</p>
+                    </div>
+                </div>
             </div>
-        </div>
-        <div class="flex justify-end">
-            <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-emerald-950 shadow-lg shadow-emerald-500/25 transition hover:bg-emerald-400">
-                Import Playlist
-            </button>
-        </div>
-    </form>
+
+            <!-- File Upload Section -->
+            <div class="space-y-6">
+                <h3 class="text-lg font-semibold text-plex-text border-b border-plex-border pb-2">Import Data</h3>
+                <div class="space-y-6">
+                    <div class="space-y-3">
+                        <label for="csv_file" class="block text-sm font-semibold text-plex-text">Upload CSV File</label>
+                        <div class="relative">
+                            <input id="csv_file" name="csv_file" type="file" accept=".csv,.txt"
+                                   class="block w-full text-sm text-plex-text-muted
+                                          file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0
+                                          file:text-sm file:font-semibold file:text-black
+                                          file:bg-gradient-to-r file:from-plex-accent file:to-plex-accent-dark
+                                          file:shadow-lg file:shadow-plex-accent/25
+                                          hover:file:shadow-xl hover:file:shadow-plex-accent/35
+                                          file:transition-all file:duration-200
+                                          hover:file:transform hover:file:-translate-y-0.5" />
+                        </div>
+                        <div class="flex items-start gap-3 text-xs">
+                            <svg class="w-4 h-4 text-plex-accent mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                            </svg>
+                            <div class="text-plex-text-faint">
+                                <p>CSV should include <strong>Track name</strong> and <strong>Artist name</strong> columns.</p>
+                                <p class="mt-1">Optional: <strong>Album</strong> column for better matching accuracy.</p>
+                            </div>
+                        </div>
+                        <p id="csv_file_status" class="text-xs font-medium"></p>
+                    </div>
+
+                    <div class="space-y-3">
+                        <label for="csv_text" class="block text-sm font-semibold text-plex-text">Track List Preview</label>
+                        <div class="relative">
+                            <textarea id="csv_text" name="csv_text" rows="12"
+                                      class="plex-input font-mono w-full rounded-xl px-4 py-4 text-sm text-plex-text placeholder-plex-text-faint focus:outline-none resize-none"
+                                      placeholder="Artist name,Album,Track name&#10;The Weeknd,After Hours,Blinding Lights&#10;Dua Lipa,Future Nostalgia,Don't Start Now&#10;...">{{ form_values.csv_text }}</textarea>
+                            <div class="absolute bottom-3 right-3 text-xs text-plex-text-faint font-mono">
+                                <span id="line_count">0 tracks</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-plex-text-faint">Review and edit your track list before importing. Each line represents one track.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Section -->
+            <div class="flex justify-end pt-4">
+                <button type="submit"
+                        class="plex-button px-8 py-4 rounded-xl text-black font-bold text-sm uppercase tracking-wide flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                    </svg>
+                    Create Playlist
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
-<div id="progress_overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur">
-    <div class="w-full max-w-md rounded-xl border border-emerald-500/40 bg-slate-900 px-6 py-8 text-center shadow-xl">
-        <h2 class="text-lg font-semibold text-emerald-200">Importing playlist…</h2>
-        <p id="progress_message" class="mt-2 text-sm text-slate-400">Preparing tracks…</p>
-        <div class="mt-6 h-3 w-full rounded-full bg-slate-800">
-            <div id="progress_bar" class="h-full rounded-full bg-emerald-500 transition-all duration-300" style="width: 0%"></div>
+
+<!-- Progress Overlay -->
+<div id="progress_overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md"
+     style="background: rgba(15, 15, 15, 0.9);">
+    <div class="w-full max-w-lg mx-4">
+        <div class="plex-card rounded-2xl p-8 text-center shadow-plex-lg">
+            <!-- Progress Icon -->
+            <div class="w-16 h-16 bg-gradient-to-br from-plex-accent to-plex-accent-dark rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-plex-accent">
+                <svg class="w-8 h-8 text-black animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </div>
+
+            <h2 class="text-xl font-bold text-plex-text mb-2">Creating Playlist</h2>
+            <p id="progress_message" class="text-plex-text-muted mb-6">Analyzing tracks and matching with your library...</p>
+
+            <!-- Progress Bar -->
+            <div class="relative">
+                <div class="h-3 w-full rounded-full bg-plex-surface border border-plex-border overflow-hidden">
+                    <div id="progress_bar" class="h-full rounded-full bg-gradient-to-r from-plex-accent to-plex-accent-dark transition-all duration-500 ease-out shadow-inner" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between items-center mt-3">
+                    <p id="progress_counter" class="text-sm text-plex-text-faint font-mono">0 / 0</p>
+                    <p class="text-sm text-plex-text-faint">Processing tracks...</p>
+                </div>
+            </div>
         </div>
-        <p id="progress_counter" class="mt-2 text-xs text-slate-500">0 / 0</p>
     </div>
 </div>
 <script>
@@ -111,15 +220,15 @@
             textarea.value = payload.csv || '';
             textarea.dispatchEvent(new Event('input'));
             if (status) {
-                status.textContent = `Parsed ${payload.entryCount} tracks.`;
-                status.classList.remove('text-red-300');
-                status.classList.add('text-emerald-400');
+                status.textContent = `✓ Parsed ${payload.entryCount} tracks successfully`;
+                status.classList.remove('text-plex-error');
+                status.classList.add('text-plex-success');
             }
         } catch (error) {
             if (status) {
-                status.textContent = error.message || 'Unable to preview CSV.';
-                status.classList.remove('text-emerald-400');
-                status.classList.add('text-red-300');
+                status.textContent = `✗ ${error.message || 'Unable to preview CSV'}`;
+                status.classList.remove('text-plex-success');
+                status.classList.add('text-plex-error');
             }
         }
     }
@@ -127,8 +236,8 @@
     fileInput.addEventListener('change', () => {
         if (status) {
             status.textContent = '';
-            status.classList.remove('text-red-300');
-            status.classList.remove('text-emerald-400');
+            status.classList.remove('text-plex-error');
+            status.classList.remove('text-plex-success');
         }
 
         const file = fileInput.files && fileInput.files[0];
@@ -137,12 +246,31 @@
         }
 
         if (status) {
-            status.textContent = 'Parsing file...';
-            status.classList.add('text-emerald-400');
+            status.textContent = '⏳ Parsing file...';
+            status.classList.add('text-plex-accent');
         }
 
         requestPreview(file);
     });
+
+    // Add line counter functionality
+    const lineCountEl = document.getElementById('line_count');
+    function updateLineCount() {
+        if (!lineCountEl || !textarea) return;
+        const text = textarea.value.trim();
+        if (!text) {
+            lineCountEl.textContent = '0 tracks';
+            return;
+        }
+        const lines = text.split('\n').filter(line => line.trim());
+        const trackCount = Math.max(0, lines.length - 1); // Subtract header line
+        lineCountEl.textContent = `${trackCount} track${trackCount !== 1 ? 's' : ''}`;
+    }
+
+    if (textarea) {
+        textarea.addEventListener('input', updateLineCount);
+        updateLineCount(); // Initial count
+    }
 })();
 
 (function () {
@@ -161,11 +289,13 @@
             return;
         }
         statusNode.textContent = message;
-        statusNode.classList.remove('text-red-300', 'text-emerald-400');
+        statusNode.classList.remove('text-plex-error', 'text-plex-success', 'text-plex-accent');
         if (isError) {
-            statusNode.classList.add('text-red-300');
+            statusNode.classList.add('text-plex-error');
         } else if (message.toLowerCase().includes('loaded')) {
-            statusNode.classList.add('text-emerald-400');
+            statusNode.classList.add('text-plex-success');
+        } else {
+            statusNode.classList.add('text-plex-accent');
         }
     }
 
@@ -204,11 +334,11 @@
         const token = plexToken ? plexToken.value.trim() : '';
 
         if (!token) {
-            setStatus('Enter your Plex token to load libraries.', true);
+            setStatus('⚠️ Enter your Plex token to discover libraries', true);
             return;
         }
 
-        setStatus('Loading libraries…');
+        setStatus('🔍 Discovering music libraries...');
         refreshBtn.disabled = true;
         select.disabled = true;
 
@@ -230,12 +360,12 @@
             applyOptions(payload.sections || [], previousValue);
 
             if ((payload.sections || []).length === 0) {
-                setStatus('No music libraries found.', true);
+                setStatus('❌ No music libraries found in your Plex server', true);
             } else {
-                setStatus(`Loaded ${(payload.sections || []).length} music library${payload.sections.length === 1 ? '' : ' libraries'}.`);
+                setStatus(`✅ Found ${(payload.sections || []).length} music librar${payload.sections.length === 1 ? 'y' : 'ies'}`);
             }
         } catch (error) {
-            setStatus(error.message || 'Unable to fetch libraries.', true);
+            setStatus(`❌ ${error.message || 'Unable to connect to Plex server'}`, true);
         } finally {
             refreshBtn.disabled = false;
             select.disabled = false;
@@ -278,7 +408,7 @@
             progressCounter.textContent = `0 / ${total}`;
         }
         if (progressMsg) {
-            progressMsg.textContent = 'Import in progress…';
+            progressMsg.textContent = 'Analyzing tracks and matching with your library...';
         }
     }
 
@@ -304,9 +434,9 @@
         progressBar.style.width = `${Math.round(ratio * 100)}%`;
         progressCounter.textContent = `${processed} / ${safeTotal}`;
         if (status === 'completed') {
-            progressMsg.textContent = 'Finalising playlist…';
+            progressMsg.textContent = 'Finalizing your playlist...';
         } else if (status === 'error') {
-            progressMsg.textContent = 'An error occurred. Finishing up…';
+            progressMsg.textContent = 'Processing completed with errors...';
         }
     }
 
@@ -317,7 +447,7 @@
                 if (!response.ok) {
                     if (response.status === 404) {
                         if (progressMsg) {
-                            progressMsg.textContent = 'Preparing import…';
+                            progressMsg.textContent = 'Initializing import process...';
                         }
                         return; // try again on next tick
                     }
@@ -367,7 +497,7 @@
         } catch (error) {
             stopPolling();
             hideOverlay();
-            alert('Import failed to start. Please try again.');
+            alert('⚠️ Import failed to start. Please check your connection and try again.');
         }
     });
 })();

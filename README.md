@@ -1,19 +1,34 @@
 # Plex CSV Playlist Importer
 
-A self-hosted FastAPI web app that turns CSV/TXT playlist exports into Plex playlists. The app parses and normalises track metadata, fuzzy-matches entries against your Plex music library, and pushes the results back into Plex. It ships with both Docker and native workflows, Tailwind-styled Jinja templates, and extensive logging for troubleshooting import issues.
+A beautifully designed, self-hosted FastAPI web app that transforms CSV/TXT playlist exports into Plex playlists with a **stunning Plex-inspired interface**. The app features intelligent track metadata parsing, advanced fuzzy-matching against your Plex music library, and seamless playlist integration. Built with a premium design system that matches Plex's visual language, offering both Docker and native workflows with extensive logging for troubleshooting.
 
 ---
 
 ## Features
 
-- **CSV ingestion** via upload or paste, with UTF-8 / Latin-1 auto-detection and pandas-backed parsing.
-- **Normalised preview + progress**: uploaded files are rendered into a canonical `Artist name,Album,Track name` table and imports display a live progress bar based on processed tracks.
-- **Post-import report**: download a CSV (`Artist, Album, Track, Status`) summarising imported and unmatched rows.
-- **Library auto-discovery**: the UI pulls music libraries straight from Plex so you can pick the correct section from a dropdown.
-- **Fuzzy matching**: RapidFuzz + Unidecode scoring against Plex search results, with album-based tie-breaking.
-- **Playlist management**: replace or append existing Plex playlists while avoiding duplicate `ratingKey`s.
-- **Rich logging**: all activity streams to `logs/importer.log` for post-run analysis.
-- **Docker + Compose** packaging, plus documented native macOS/Linux workflow.
+### 🎨 **Premium Plex-Inspired Design**
+- **Authentic Plex interface** with signature Gamboge accent colors and gradient cards
+- **Professional typography** using system font stacks for optimal readability
+- **Smooth animations** and hover effects throughout the interface
+- **Responsive design** that works beautifully on desktop and mobile
+- **Dark theme** with proper contrast and visual hierarchy
+
+### 🚀 **Powerful Import Engine**
+- **Smart CSV ingestion** via upload or paste, with UTF-8 / Latin-1 auto-detection and pandas-backed parsing
+- **Live preview + progress**: uploaded files are rendered into a canonical `Artist name,Album,Track name` table with real-time track counting
+- **Advanced fuzzy matching**: RapidFuzz + Unidecode scoring against Plex search results, with album-based tie-breaking
+- **Detailed post-import reports**: download comprehensive CSV reports with match status and troubleshooting info
+
+### 🔧 **Seamless Plex Integration**
+- **Auto-discovery**: the UI dynamically pulls music libraries from your Plex server
+- **Flexible playlist management**: replace or append existing Plex playlists while avoiding duplicates
+- **Connection diagnostics**: robust connectivity testing with macOS-specific troubleshooting
+- **Real-time progress tracking**: watch your import progress with animated status updates
+
+### 📊 **Developer Experience**
+- **Rich logging**: all activity streams to `logs/importer.log` for detailed analysis
+- **Docker + Compose** packaging, plus documented native macOS/Linux workflow
+- **FastAPI backend** with comprehensive error handling and API documentation
 
 ---
 
@@ -21,11 +36,12 @@ A self-hosted FastAPI web app that turns CSV/TXT playlist exports into Plex play
 
 | Layer      | Technology |
 |------------|------------|
-| Runtime    | Python 3.12 |
+| Runtime    | Python 3.12+ |
 | Web        | FastAPI, Uvicorn, Jinja2 |
 | Parsing    | pandas |
 | Matching   | RapidFuzz, Unidecode, PlexAPI |
-| Styling    | Tailwind CSS (CDN) |
+| Design     | Tailwind CSS (CDN) + Custom Plex Design System |
+| UI/UX      | Plex-inspired interface with Gamboge accents |
 
 ---
 
@@ -40,7 +56,7 @@ app/
 │   ├── csv_loader.py     # CSV parsing, normalisation, preview serialisation
 │   ├── matching.py       # RapidFuzz-based track matcher against Plex
 │   └── playlist_importer.py  # Plex API orchestration & playlist updates
-└── templates/            # Jinja2 templates (Tailwind UI)
+└── templates/            # Jinja2 templates (Plex-inspired UI)
 Dockerfile                # Python slim image with pinned dependencies
 docker-compose.yml        # Single-service stack + .env wiring
 requirements.txt          # Pinned Python dependencies
@@ -82,13 +98,13 @@ All logs stream to `logs/importer.log` on the host.
 # Clone / unpack repo, then
 python3 -m venv .venv
 source .venv/bin/activate
-pip install --upgrade pip setuptools wheel
-pip install -r requirements.txt
+pip3 install --upgrade pip setuptools wheel
+pip3 install -r requirements.txt
 cp .env.example .env  # edit values afterwards
-uvicorn app.main:app --reload --host 0.0.0.0 --port ${APP_PORT:-8080}
+python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port ${APP_PORT:-8080}
 ```
 
-Visit `http://localhost:8080`, upload or paste your CSV, review the canonical output in the textarea, then import.
+Visit `http://localhost:8080` to experience the beautiful Plex-inspired interface. Upload or paste your CSV, review the live preview, then create your playlist with real-time progress tracking.
 
 To stop: `Ctrl+C` followed by `deactivate`.
 
@@ -129,11 +145,28 @@ docker-compose down
 
 ---
 
+## Design Philosophy
+
+The interface has been completely redesigned to **match Plex's visual identity**:
+
+### **Authentic Plex Experience**
+- **Color Palette**: Deep blacks and grays with Plex's signature Gamboge (`#e5a00d`) accent
+- **Typography**: Clean system fonts with proper hierarchy and spacing
+- **Visual Elements**: Gradient cards, subtle shadows, and smooth animations
+- **Responsive Design**: Beautiful on desktop and mobile devices
+
+### **Enhanced User Experience**
+- **Sectioned Interface**: Clear organization of server connection, library selection, and import data
+- **Real-time Feedback**: Live track counting, animated progress bars, and status indicators
+- **Visual Hierarchy**: Icons, colors, and spacing guide users through the workflow
+- **Success Celebrations**: Beautiful results page with statistics and detailed reporting
+
 ## Implementation Notes
 
 - **CSV parsing**: `app/services/csv_loader.py` uses pandas with automatic delimiter detection, trims whitespace, and filters down to the required columns. The same module serialises the canonical preview table.
 - **Fuzzy search**: `TrackMatcher` normalises text using Unidecode, strips common noise (`feat.`, remaster tags), and scores candidates with `fuzz.WRatio`. Album similarity contributes to tie-breaking when available.
 - **Plex coordination**: `PlaylistImporter` deduplicates by `ratingKey`, skips items lacking playable media, and allows replace-or-append semantics.
+- **Design System**: Custom Tailwind CSS configuration with Plex color tokens, gradient utilities, and animation classes defined in `base.html`.
 - **Logging**: `app/main.py` attaches console + file handlers up front; DEBUG traces (including individual match scores and parsing skips) are written to `logs/importer.log`.
 - **Preview endpoint**: `/preview` shares the same parsing pipeline as imports to guarantee consistency between what you edit and what gets submitted.
 

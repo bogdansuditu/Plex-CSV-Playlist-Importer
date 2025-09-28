@@ -5,12 +5,98 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Plex CSV Playlist Importer{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'plex': {
+                            'bg': '#0f0f0f',
+                            'bg-light': '#1a1a1a',
+                            'surface': '#1e1e1e',
+                            'surface-light': '#242424',
+                            'border': '#2a2a2a',
+                            'accent': '#e5a00d',
+                            'accent-dark': '#cc8f0c',
+                            'text': '#ffffff',
+                            'text-muted': '#9ca3af',
+                            'text-faint': '#6b7280',
+                            'success': '#22c55e',
+                            'success-dark': '#16a34a',
+                            'error': '#ef4444',
+                            'error-dark': '#dc2626'
+                        }
+                    },
+                    fontFamily: {
+                        'sans': ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif']
+                    },
+                    boxShadow: {
+                        'plex': '0 4px 20px rgba(0, 0, 0, 0.4)',
+                        'plex-lg': '0 8px 30px rgba(0, 0, 0, 0.5)',
+                        'plex-accent': '0 4px 20px rgba(229, 160, 13, 0.15)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+            font-feature-settings: 'rlig' 1, 'calt' 1;
+        }
+        .plex-gradient {
+            background: linear-gradient(135deg, #1e1e1e 0%, #242424 100%);
+        }
+        .plex-border {
+            border: 1px solid #2a2a2a;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+        .plex-button {
+            background: linear-gradient(135deg, #e5a00d 0%, #cc8f0c 100%);
+            box-shadow: 0 2px 8px rgba(229, 160, 13, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            transition: all 0.2s ease;
+        }
+        .plex-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(229, 160, 13, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+        .plex-button:active {
+            transform: translateY(0);
+        }
+        .plex-input {
+            background: linear-gradient(135deg, #1e1e1e 0%, #242424 100%);
+            border: 1px solid #2a2a2a;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+        }
+        .plex-input:focus {
+            border-color: #e5a00d;
+            box-shadow: 0 0 0 3px rgba(229, 160, 13, 0.1), inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .plex-card {
+            background: linear-gradient(135deg, #1e1e1e 0%, #242424 100%);
+            border: 1px solid #2a2a2a;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+    </style>
 </head>
-<body class="min-h-screen bg-slate-950 text-slate-100">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <header class="mb-8">
-            <h1 class="text-3xl font-semibold tracking-tight">Plex CSV Playlist Importer</h1>
-            <p class="mt-2 text-slate-300">Import playlists into Plex from CSV exports with fuzzy matching.</p>
+<body class="min-h-screen text-plex-text font-sans antialiased">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <header class="mb-12 text-center">
+            <div class="flex items-center justify-center mb-6">
+                <!-- Plex-style logo/icon -->
+                <div class="w-12 h-12 bg-gradient-to-br from-plex-accent to-plex-accent-dark rounded-lg flex items-center justify-center mr-4 shadow-plex-accent">
+                    <svg class="w-7 h-7 text-black" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-4xl font-bold tracking-tight text-plex-text">Plex Playlist Importer</h1>
+                </div>
+            </div>
+            <p class="text-lg text-plex-text-muted max-w-2xl mx-auto leading-relaxed">
+                Transform your CSV playlists into beautiful Plex collections with intelligent fuzzy matching technology.
+            </p>
         </header>
         {% block content %}{% endblock %}
     </div>

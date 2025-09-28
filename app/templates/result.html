@@ -1,62 +1,137 @@
 {% extends "base.html" %}
-{% block title %}Import Result{% endblock %}
+{% block title %}Import Complete{% endblock %}
 {% block content %}
-<div class="space-y-6">
-    <div class="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-6">
-        <h2 class="text-xl font-semibold text-emerald-200">Playlist processed successfully</h2>
-        <p class="mt-2 text-sm text-emerald-100">{{ playlist_name }} on {{ plex_url }}</p>
-        <dl class="mt-4 grid gap-4 md:grid-cols-3 text-sm">
-            <div class="rounded-lg border border-emerald-400/30 bg-slate-900/60 p-4">
-                <dt class="text-slate-300">Tracks matched</dt>
-                <dd class="mt-1 text-2xl font-semibold text-emerald-300">{{ result.matched_count }}</dd>
+<div class="space-y-8">
+    <!-- Success Header -->
+    <div class="plex-card rounded-2xl p-8 shadow-plex-lg">
+        <div class="flex items-start gap-6">
+            <!-- Success Icon -->
+            <div class="w-16 h-16 bg-gradient-to-br from-plex-success to-plex-success-dark rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
             </div>
-            <div class="rounded-lg border border-emerald-400/30 bg-slate-900/60 p-4">
-                <dt class="text-slate-300">Tracks added to Plex</dt>
-                <dd class="mt-1 text-2xl font-semibold text-emerald-300">{{ result.added_count }}</dd>
+
+            <div class="flex-1">
+                <h2 class="text-2xl font-bold text-plex-text mb-2">Playlist Created Successfully</h2>
+                <div class="space-y-1 text-plex-text-muted">
+                    <p class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-plex-accent" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <strong class="text-plex-text">{{ playlist_name }}</strong> has been added to your Plex server
+                    </p>
+                    <p class="flex items-center gap-2 text-sm">
+                        <svg class="w-4 h-4 text-plex-text-faint" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zm8 0a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1h-6a1 1 0 01-1-1v-6z" clip-rule="evenodd"/>
+                        </svg>
+                        <span>{{ plex_url }}</span>
+                    </p>
+                </div>
             </div>
-            <div class="rounded-lg border border-emerald-400/30 bg-slate-900/60 p-4">
-                <dt class="text-slate-300">Unmatched tracks</dt>
-                <dd class="mt-1 text-2xl font-semibold {% if result.unmatched %}text-red-300{% else %}text-emerald-300{% endif %}">{{ result.unmatched|length }}</dd>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="mt-8 grid gap-4 md:grid-cols-3">
+            <div class="bg-plex-surface/40 border border-plex-border rounded-xl p-5 text-center">
+                <div class="text-3xl font-bold text-plex-success mb-1">{{ result.matched_count }}</div>
+                <div class="text-sm text-plex-text-muted font-medium">Tracks Matched</div>
+                <div class="text-xs text-plex-text-faint mt-1">Successfully found in library</div>
             </div>
-        </dl>
+            <div class="bg-plex-surface/40 border border-plex-border rounded-xl p-5 text-center">
+                <div class="text-3xl font-bold text-plex-accent mb-1">{{ result.added_count }}</div>
+                <div class="text-sm text-plex-text-muted font-medium">Added to Playlist</div>
+                <div class="text-xs text-plex-text-faint mt-1">Now available in Plex</div>
+            </div>
+            <div class="bg-plex-surface/40 border border-plex-border rounded-xl p-5 text-center">
+                <div class="text-3xl font-bold {% if result.unmatched %}text-plex-error{% else %}text-plex-success{% endif %} mb-1">{{ result.unmatched|length }}</div>
+                <div class="text-sm text-plex-text-muted font-medium">Unmatched</div>
+                <div class="text-xs text-plex-text-faint mt-1">Could not be found</div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
         {% if report_token %}
-        <div class="mt-6 flex justify-end">
-            <a href="/report/{{ report_token }}" class="inline-flex items-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/20 px-4 py-2 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-500/30">
-                Download CSV Report
+        <div class="mt-8 flex justify-end">
+            <a href="/report/{{ report_token }}"
+               class="inline-flex items-center gap-3 px-6 py-3 bg-plex-surface hover:bg-plex-surface-light border border-plex-border hover:border-plex-accent rounded-xl text-plex-text hover:text-plex-accent font-medium transition-all duration-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Download Detailed Report
             </a>
         </div>
         {% endif %}
     </div>
 
+    <!-- Unmatched Tracks Section -->
     {% if result.unmatched %}
-    <div class="rounded-xl border border-red-500/30 bg-red-500/10">
-        <button type="button" class="flex w-full items-center justify-between px-6 py-4 text-left text-sm font-semibold text-red-100" data-accordion-button>
-            Unmatched tracks ({{ result.unmatched|length }})
-            <span class="text-xs uppercase tracking-wide">Toggle</span>
-        </button>
-        <div class="divide-y divide-red-500/20 border-t border-red-500/20 hidden" data-accordion-panel>
-            {% for item in result.unmatched %}
-            <div class="px-6 py-4 text-sm text-red-100">
-                <p class="font-medium">Row {{ item.row }}: {{ item.track_name }} — {{ item.artist_name }}</p>
-                {% if item.reason %}<p class="text-xs text-red-200/80">{{ item.reason }}</p>{% endif %}
+    <div class="plex-card rounded-2xl overflow-hidden shadow-plex">
+        <button type="button" class="flex w-full items-center justify-between px-8 py-6 text-left hover:bg-plex-surface/30 transition-colors duration-200" data-accordion-button>
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 bg-plex-error/20 border border-plex-error/30 rounded-xl flex items-center justify-center">
+                    <svg class="w-5 h-5 text-plex-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.732 15.5c-.77.833.192 2.5 1.732 2.5z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-plex-text">Unmatched Tracks ({{ result.unmatched|length }})</h3>
+                    <p class="text-sm text-plex-text-muted">These tracks could not be found in your Plex library</p>
+                </div>
             </div>
-            {% endfor %}
+            <svg class="w-5 h-5 text-plex-text-muted transition-transform duration-200" data-accordion-icon fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+        </button>
+        <div class="border-t border-plex-border hidden" data-accordion-panel>
+            <div class="max-h-80 overflow-y-auto">
+                {% for item in result.unmatched %}
+                <div class="px-8 py-4 border-b border-plex-border/50 last:border-b-0 hover:bg-plex-surface/20 transition-colors duration-150">
+                    <div class="flex items-start gap-4">
+                        <div class="w-8 h-8 bg-plex-error/10 border border-plex-error/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <span class="text-xs font-mono text-plex-error">{{ item.row }}</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-medium text-plex-text truncate">{{ item.track_name }}</p>
+                            <p class="text-sm text-plex-text-muted truncate">by {{ item.artist_name }}</p>
+                            {% if item.reason %}
+                            <p class="text-xs text-plex-text-faint mt-1 italic">{{ item.reason }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
         </div>
     </div>
-    <script>
-    document.querySelectorAll('[data-accordion-button]').forEach((button) => {
-        button.addEventListener('click', () => {
-            const panel = button.nextElementSibling;
-            panel.classList.toggle('hidden');
-        });
-    });
-    </script>
     {% endif %}
 
-    <div class="flex justify-end">
-        <a href="/" class="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:text-slate-100">
-            Import another playlist
+    <!-- Navigation -->
+    <div class="flex justify-center">
+        <a href="/"
+           class="plex-button px-8 py-4 rounded-xl text-black font-bold text-sm uppercase tracking-wide flex items-center gap-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+            Create Another Playlist
         </a>
     </div>
 </div>
+
+<script>
+document.querySelectorAll('[data-accordion-button]').forEach((button) => {
+    button.addEventListener('click', () => {
+        const panel = button.nextElementSibling;
+        const icon = button.querySelector('[data-accordion-icon]');
+
+        panel.classList.toggle('hidden');
+
+        if (panel.classList.contains('hidden')) {
+            icon.style.transform = 'rotate(0deg)';
+        } else {
+            icon.style.transform = 'rotate(180deg)';
+        }
+    });
+});
+</script>
 {% endblock %}
