@@ -14,6 +14,7 @@ from app.config import settings
 from app.services.csv_loader import CSVParseError, parse_playlist_csv
 from app.services.playlist_importer import PlaylistImportError, PlaylistImporter
 from app.services.progress import progress_tracker
+from app.services.connection_tester import test_plex_connection, PlexConnectionError
 from plexapi.server import PlexServer
 from app.models import ImportResult, PlaylistEntry
 
@@ -161,9 +162,46 @@ async def import_playlist(
         if job_id:
             progress_tracker.update(job_id, processed)
 
+    # Test connection with fallbacks before creating the importer
+    target_plex_url = plex_url or settings.plex_url
+    target_plex_token = plex_token or settings.plex_token
+
+    logger.info(f"Testing connection to Plex server before import: {target_plex_url}")
+    success, working_url, connection_error = test_plex_connection(target_plex_url, target_plex_token)
+
+    if not success:
+        logger.error(f"Plex connection failed: {connection_error}")
+        if job_id:
+            progress_tracker.error(job_id)
+            progress_tracker.pop(job_id)
+
+        # Return detailed error with troubleshooting steps
+        return templates.TemplateResponse(
+            "index.html",
+            {
+                "request": request,
+                "defaults": settings,
+                "error": f"{connection_error}\n\nTroubleshooting steps:\n" +
+                        "\n".join(f"• {step}" for step in connection_error.troubleshooting_steps),
+                "form_values": {
+                    "plex_url": plex_url or settings.plex_url,
+                    "plex_token": plex_token,
+                    "music_section": music_section,
+                    "playlist_name": playlist_name,
+                    "replace_existing": replace_flag,
+                    "csv_text": csv_text_value,
+                },
+            },
+            status_code=502,
+        )
+
+    # Use the working URL (might be different from original if fallback was used)
+    if working_url != target_plex_url:
+        logger.info(f"Using fallback URL for import: {working_url}")
+
     importer = PlaylistImporter(
-        plex_url=plex_url or settings.plex_url,
-        plex_token=plex_token or settings.plex_token,
+        plex_url=working_url,
+        plex_token=target_plex_token,
         music_section=music_section,
         match_threshold=settings.match_confidence_threshold,
     )
@@ -270,8 +308,27 @@ async def fetch_music_libraries(payload: Dict[str, str] = Body(default={})):  # 
     if not plex_token:
         return JSONResponse({"error": "Plex token is required to list libraries."}, status_code=400)
 
+    # Test connection with fallbacks before attempting to use PlexAPI
+    logger.info(f"Testing connection to Plex server: {plex_url}")
+    success, working_url, connection_error = test_plex_connection(plex_url, plex_token)
+
+    if not success:
+        logger.error(f"Plex connection failed: {connection_error}")
+
+        # Return detailed error with troubleshooting steps
+        error_response = {
+            "error": str(connection_error),
+            "troubleshooting": connection_error.troubleshooting_steps,
+            "details": "Connection test failed - see troubleshooting steps"
+        }
+        return JSONResponse(error_response, status_code=502)
+
+    # Use the working URL (might be different from original if fallback was used)
+    if working_url != plex_url:
+        logger.info(f"Using fallback URL: {working_url}")
+
     try:
-        plex = PlexServer(plex_url, plex_token)
+        plex = PlexServer(working_url, plex_token)
         sections = []
         for section in plex.library.sections():
             section_type = getattr(section, "type", "")
@@ -282,10 +339,22 @@ async def fetch_music_libraries(payload: Dict[str, str] = Body(default={})):  # 
                 })
         if not sections:
             return JSONResponse({"sections": [], "message": "No music libraries found."})
-        return JSONResponse({"sections": sections})
+
+        response = {"sections": sections}
+
+        # Include the working URL if it was different
+        if working_url != plex_url:
+            response["suggested_url"] = working_url
+            response["message"] = f"Connected using fallback URL: {working_url}"
+
+        return JSONResponse(response)
+
     except Exception as exc:
         logger.exception("Failed to fetch Plex libraries: %s", exc)
-        return JSONResponse({"error": "Unable to retrieve music libraries."}, status_code=502)
+        return JSONResponse({
+            "error": "Unable to retrieve music libraries after successful connection test.",
+            "details": str(exc)
+        }, status_code=502)
 
 
 @app.get("/report/{token}")
